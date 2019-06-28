@@ -1,0 +1,31 @@
+import pandas as pd
+import numpy as np
+
+#Gives the percentage of missing values for all variables of 'df'. 
+def missing_percent(df):
+    missing = df.isnull().sum().sort_values(ascending=False)
+    percent = (df.isnull().sum()/df.isnull().count()).sort_values(ascending=False)
+    missing_data = pd.concat([missing, percent], axis=1, keys=['Missing', 'Percent'])
+    return missing_data
+
+#Variables that have higher missing percentage than 'percent' are droped from the 'df'.
+def filter_missing_columns(df,percent):
+    missing_data=missing_percent(df)
+    remaining_colums=missing_data[missing_data['Percent']<percent]
+    #print('{} are removed'.format(missing_data[missing_data['Percent']>=percent]))
+    a = remaining_colums.index
+    return df[a]
+
+#Variables that have most of its values as same are droped from the 'df'.
+#Eg: single_value_elimination(df,0.95) drops features of 'df' if more than 95% of the values are the same.
+def single_value_elimination(df,percent):
+    modes = df.mode().iloc[0,:]
+    remaining_columns=[]
+    for i in range(len(df.columns)):
+        count = 0
+        for j in range(len(df)):
+            if df.iloc[j, i] == modes[i]:
+                count = count + 1
+        p = (count / len(df))
+        if p<=percent: remaining_columns.append(df.mode().iloc[0,:].index[i])
+    return df[remaining_columns]
