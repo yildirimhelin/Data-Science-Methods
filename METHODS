@@ -56,9 +56,9 @@ def reject_outliers_Z(df, m=3):
     print ("Shape without Z-score outliers: ",df2.shape)
     return df2
     
-# Generates univariate logit models with all of the variables seperately and calculates the gini values of models. 
-# This method can be used to understand the explanatory power of variables independently for feature elimination. 
-# (Eliminating those who have gini< 0.07 is one way) 
+# This method can be used to understand the discrimination power of variables independently for feature elimination. 
+# It generates univariate logit models with all of the variables seperately and calculates the gini values of models. 
+# Variables which have gini< 0.07 is considered not to distinguish the target variable and therefore not explanatory.
 def print_univariate_gini(x,y):
     from sklearn.linear_model import LogisticRegression
     from sklearn import metrics
