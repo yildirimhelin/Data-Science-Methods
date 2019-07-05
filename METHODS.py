@@ -8,7 +8,7 @@ def missing_percent(df):
     missing_data = pd.concat([missing, percent], axis=1, keys=['Missing', 'Percent'])
     return missing_data
 
-#Variables that have higher missing percentage than 'percent' are droped from the 'df'.
+#Variables that have higher missing percentage than 'percent' are dropped from the 'df'.
 def filter_missing_columns(df,percent):
     missing_data=missing_percent(df)
     remaining_colums=missing_data[missing_data['Percent']<percent]
@@ -16,7 +16,7 @@ def filter_missing_columns(df,percent):
     a = remaining_colums.index
     return df[a]
 
-#Variables that have most of its values as same are droped from the 'df'.
+#Variables that have most of its values as same are dropped from the 'df'.
 #Eg: single_value_elimination(df,0.95) drops features of 'df' if more than 95% of the values are the same.
 def single_value_elimination(df,percent):
     modes = df.mode().iloc[0,:]
@@ -174,7 +174,7 @@ def Binnig_DecTree(x_train,y_train,opt_depth):
         bins.append(1000000000000)    
         labels=[i+2 for i in range(len(bins)-1)] #Labels start from '2'.               
         
-        category = pd.cut(x,bins=bins,labels=labels) #Groups the variable based on bin bseparations.
+        category = pd.cut(x,bins=bins,labels=labels) #Groups the variable based on bin separations.
         category = category.to_frame()
         category[x.name] = category[x.name].cat.add_categories([1])
         category[x.name].fillna(1, inplace=True) #All the nulls are being labeled as '1'.
@@ -184,7 +184,7 @@ def Binnig_DecTree(x_train,y_train,opt_depth):
     return x_train
 
 #This algorithm fits the train data to logistic regression in 'statsmodels' library and generates the summary table and AUC/GINI values of the model in test data.
-#It also returns the p values of each variable so that the ones greater than 0.05 can be checked easily and eliminated.
+#It also returns the p-values of each variable so that the ones greater than 0.05 can be checked easily and eliminated.
 def logit_statmodels(x_train,y_train,x_test,y_test):
     import statsmodels.api as sm
     from sklearn.metrics import roc_auc_score
