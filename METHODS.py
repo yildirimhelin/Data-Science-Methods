@@ -55,7 +55,27 @@ def reject_outliers_Z(df, m=3):
     df2=df[(z < m).all(axis=1)]
     print ("Shape without Z-score outliers: ",df2.shape)
     return df2
+
+def coerce_data_percentile (df,coerce_var,p=5): #p is the percent that you want to coerce (over 100)
+    df_coerced=df.copy()    
+    for i in range(len(coerce_var)):
+        p_min=np.percentile(df[coerce_var[i]],p)
+        p_max=np.percentile(df[coerce_var[i]],(100-p))
+        df_coerced[coerce_var[i]]=np.clip(df[coerce_var[i]],p_min,p_max) 
+    return df_coerced
     
+def coerce_data_Z (df,coerce_var,m=3): #m is the standard deviation that you want to coerce
+    df_coerced=df[coerce_var].copy()    
+    for i in range(len(coerce_var)):
+        z=stats.zscore(df[coerce_var[i]])
+        p_max=df[coerce_var[i]][(z > m)].min()
+        p_min=df[coerce_var[i]][(z < (-1*m))].max()
+        if np.isnan(p_max): p_max=df[coerce_var[i]].max()
+        if np.isnan(p_min): p_min=df[coerce_var[i]].min()
+        df_coerced[coerce_var[i]]=np.clip(df[coerce_var[i]],p_min,p_max)
+    #df_coerced.add_prefix('CO_',inplace=True)
+    return df_coerced
+
 # This method can be used to understand the discrimination power of variables independently for feature elimination. 
 # It generates univariate logit models with all of the variables separately and calculates the Gini values of models. 
 # Variables which have Gini< 0.07 is considered not to distinguish the target variable and therefore not explanatory.
@@ -80,6 +100,24 @@ def print_univariate_gini(x,y):
     gini_univariate=pd.DataFrame(gini_univariate,index=x.columns,columns=['GINI'])
     gini_univariate.sort_values(by='GINI', ascending=False,inplace=True)
     return gini_univariate
+
+#This method does correlation elimination based on the discrimination power of variables (used Gini in this case).
+#When a full correlation matrix and a Gini list given (above method gives it) it returns a new data frame where only one of the highly correlated variables remain.
+#Here high correlation is representing greater than 50%. For example, if there are 2 variables with 70% correlation, 
+#it checks the Gini list and keep the one with higher Gini, which is considered to distinguish the target variable better. 
+#Using Gini is not necessary, you can use another value that represents the importance of variables too.
+def corr_elimination(corr_matrix, gini_list): #Gini list must be ordered descending.
+    columns = np.full((corr_matrix.shape[0],), True, dtype=bool)
+    for i in range(corr_matrix.shape[0]):    
+        if columns[i]:
+            for j in range(i+1, corr_matrix.shape[0]):        
+                if abs(corr_matrix.iloc[i,j]) >= 0.5:   #50% can be changes here.           
+                    if (gini_list.iloc[i].values>=gini_list.iloc[j].values and columns[j]):
+                        columns[j] = False
+                    elif (gini_list.iloc[j].values>gini_list.iloc[i].values and columns[j]):
+                        columns[i] = False
+    selected_columns=corr_matrix.columns[columns]
+    return selected_columns 
 
 #The following 2 methods can be used to categorize your continuous data by using decision threes. 
 #Univariate decision trees are generated separately with each variable and the buckets that trees generated are being used to 
@@ -144,3 +182,27 @@ def Binnig_DecTree(x_train,y_train,opt_depth):
         x_train = pd.concat([x_train,category],axis = 1)
         print(j, ' finished')
     return x_train
+
+#This algorithm fits the train data to logistic regression in 'statsmodels' library and generates the summary table and AUC/GINI values of the model in test data.
+#It also returns the p values of each variable so that the ones greater than 0.05 can be checked easily and eliminated.
+def logit_statmodels(x_train,y_train,x_test,y_test):
+    import statsmodels.api as sm
+    from sklearn.metrics import roc_auc_score
+    #x_sm=df_final[gini_list.tail(2).index]
+    x_cons=[]
+    x_cons_test=[]
+    x_cons=sm.add_constant(x_train)
+    x_cons_test=sm.add_constant(x_test)
+    y_train = list(y_train)
+    y_test = list(y_test)
+    logit_model=sm.Logit(y_train,x_cons)
+    result=logit_model.fit()
+    #print(result.summary())
+    print(result.summary2())  
+    #print(result.pvalues)
+    #x_sm_summary_table = b_scaled.describe()
+    y_pred= result.predict(x_cons_test)
+    print('AUC: ' ,roc_auc_score(y_test, y_pred))
+    print('GINI: ',((roc_auc_score(y_test, y_pred)-0.5)*2))
+    return result.pvalues
+       
