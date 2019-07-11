@@ -119,7 +119,7 @@ def corr_elimination(corr_matrix, gini_list): #Gini list must be ordered descend
     selected_columns=corr_matrix.columns[columns]
     return selected_columns 
 
-#The following 2 methods can be used to categorize your continuous data by using decision threes. 
+#The following 2 methods can be used to categorize your continuous data by using decision trees. 
 #Univariate decision trees are generated separately with each variable and the buckets that trees generated are being used to 
 #create new variables that are the categorical version of the original one. 
 
